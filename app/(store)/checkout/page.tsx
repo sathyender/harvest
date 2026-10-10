@@ -1,0 +1,2 @@
+import { requireUser } from "@/lib/auth/session";
+export default async function CheckoutPage(){await requireUser("/checkout");return <main className="section"><span className="eyebrow">Almost there</span><h1 style={{font:"500 60px Georgia,serif",letterSpacing:"-3px"}}>Checkout</h1><p style={{color:"var(--muted)"}}>Address, server-side totals and payment will be enabled in the checkout phase.</p></main>}

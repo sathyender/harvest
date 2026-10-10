@@ -1,0 +1,3 @@
+import Link from "next/link";
+import { requireAdmin } from "@/lib/auth/session";
+export default async function AdminLayout({children}:{children:React.ReactNode}){const admin=await requireAdmin();return <div style={{minHeight:"100vh",background:"#f5f7f3"}}><header style={{padding:"20px 6vw",background:"#fff",borderBottom:"1px solid #e4e5dc",display:"flex",justifyContent:"space-between"}}><Link href="/admin" style={{fontWeight:700}}>Harvest & Hue · Admin</Link><span style={{fontSize:13,color:"#718078"}}>{admin.name}</span></header><main style={{maxWidth:1100,margin:"0 auto",padding:"48px 6vw"}}>{children}</main></div>}

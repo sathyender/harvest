@@ -1,0 +1,321 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
+}
+
+enum Role {
+  CUSTOMER
+  ADMIN
+}
+
+enum Unit {
+  KG
+  DOZEN
+  PIECE
+  BOX
+}
+
+enum OrderStatus {
+  PENDING
+  CONFIRMED
+  COMPLETED
+  CANCELLED
+}
+
+enum DeliveryStatus {
+  PROCESSING
+  PACKED
+  OUT_FOR_DELIVERY
+  DELIVERED
+  RETURNED
+}
+
+enum PaymentMethod {
+  RAZORPAY
+  COD
+}
+
+enum PaymentStatus {
+  PENDING
+  PAID
+  FAILED
+  REFUNDED
+}
+
+enum StockReason {
+  INITIAL
+  RESTOCK
+  ORDER
+  CANCELLATION
+  ADJUSTMENT
+}
+
+enum DiscountType {
+  PERCENT
+  FLAT
+  FIXED_PRICE
+}
+
+model User {
+  id           String       @id @default(cuid())
+  name         String
+  email        String       @unique
+  phone        String?
+  passwordHash String
+  role         Role         @default(CUSTOMER)
+  isActive     Boolean      @default(true)
+  createdAt    DateTime     @default(now())
+  updatedAt    DateTime     @updatedAt
+  addresses    Address[]
+  cart         Cart?
+  wishlist     Wishlist?
+  orders       Order[]
+  reviews      Review[]
+  stockAlerts  StockAlert[]
+}
+
+model Address {
+  id        String  @id @default(cuid())
+  userId    String
+  label     String
+  fullName  String
+  phone     String
+  line1     String
+  line2     String?
+  city      String
+  state     String
+  pincode   String
+  isDefault Boolean @default(false)
+  user      User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model Category {
+  id          String    @id @default(cuid())
+  name        String    @unique
+  slug        String    @unique
+  description String?
+  sortOrder   Int       @default(0)
+  isActive    Boolean   @default(true)
+  products    Product[]
+}
+
+model Season {
+  id          String          @id @default(cuid())
+  name        String          @unique
+  slug        String          @unique
+  emoji       String
+  tagline     String?
+  description String?
+  months      Int[]
+  themeColor  String          @default("#16a34a")
+  sortOrder   Int             @default(0)
+  isActive    Boolean         @default(true)
+  products    ProductSeason[]
+}
+
+model Product {
+  id                  String          @id @default(cuid())
+  name                String
+  slug                String          @unique
+  shortDescription    String?
+  description         String
+  pricePaise          Int
+  compareAtPricePaise Int?
+  unit                Unit            @default(KG)
+  minOrderQty         Int             @default(1)
+  maxOrderQty         Int             @default(20)
+  origin              String?
+  tasteNotes          String?
+  shelfLifeDays       Int?
+  isOrganic           Boolean         @default(false)
+  nutritionHighlights String[]
+  tags                String[]
+  isFeatured          Boolean         @default(false)
+  isSeasonal          Boolean         @default(false)
+  isActive            Boolean         @default(true)
+  avgRating           Float           @default(0)
+  reviewCount         Int             @default(0)
+  soldCount           Int             @default(0)
+  categoryId          String
+  category            Category        @relation(fields: [categoryId], references: [id])
+  seasons             ProductSeason[]
+  images              ProductImage[]
+  inventory           Inventory?
+  cartItems           CartItem[]
+  wishlistItems       WishlistItem[]
+  orderItems          OrderItem[]
+  reviews             Review[]
+  stockAlerts         StockAlert[]
+}
+
+model ProductSeason {
+  productId  String
+  seasonId   String
+  peakMonths Int[]
+  product    Product @relation(fields: [productId], references: [id], onDelete: Cascade)
+  season     Season  @relation(fields: [seasonId], references: [id], onDelete: Cascade)
+
+  @@id([productId, seasonId])
+}
+
+model ProductImage {
+  id        String  @id @default(cuid())
+  productId String
+  url       String
+  publicId  String?
+  alt       String?
+  sortOrder Int     @default(0)
+  product   Product @relation(fields: [productId], references: [id], onDelete: Cascade)
+}
+
+model Inventory {
+  id                String          @id @default(cuid())
+  productId         String          @unique
+  quantity          Int             @default(0)
+  lowStockThreshold Int             @default(10)
+  product           Product         @relation(fields: [productId], references: [id], onDelete: Cascade)
+  movements         StockMovement[]
+}
+
+model StockMovement {
+  id          String      @id @default(cuid())
+  inventoryId String
+  delta       Int
+  reason      StockReason
+  note        String?
+  createdAt   DateTime    @default(now())
+  inventory   Inventory   @relation(fields: [inventoryId], references: [id], onDelete: Cascade)
+}
+
+model StockAlert {
+  id         String    @id @default(cuid())
+  userId     String
+  productId  String
+  notifiedAt DateTime?
+  user       User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  product    Product   @relation(fields: [productId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, productId])
+}
+
+model Cart {
+  id        String     @id @default(cuid())
+  userId    String     @unique
+  updatedAt DateTime   @updatedAt
+  user      User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  items     CartItem[]
+}
+
+model CartItem {
+  id        String  @id @default(cuid())
+  cartId    String
+  productId String
+  quantity  Int     @default(1)
+  cart      Cart    @relation(fields: [cartId], references: [id], onDelete: Cascade)
+  product   Product @relation(fields: [productId], references: [id], onDelete: Cascade)
+
+  @@unique([cartId, productId])
+}
+
+model Wishlist {
+  id     String         @id @default(cuid())
+  userId String         @unique
+  user   User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+  items  WishlistItem[]
+}
+
+model WishlistItem {
+  id         String   @id @default(cuid())
+  wishlistId String
+  productId  String
+  wishlist   Wishlist @relation(fields: [wishlistId], references: [id], onDelete: Cascade)
+  product    Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
+
+  @@unique([wishlistId, productId])
+}
+
+model Order {
+  id               String         @id @default(cuid())
+  orderNumber      String         @unique
+  userId           String
+  status           OrderStatus    @default(PENDING)
+  deliveryStatus   DeliveryStatus @default(PROCESSING)
+  subtotalPaise    Int
+  discountPaise    Int            @default(0)
+  deliveryFeePaise Int            @default(0)
+  totalPaise       Int
+  couponCode       String?
+  shipFullName     String
+  shipPhone        String
+  shipLine1        String
+  shipCity         String
+  shipState        String
+  shipPincode      String
+  giftMessage      String?
+  createdAt        DateTime       @default(now())
+  user             User           @relation(fields: [userId], references: [id])
+  items            OrderItem[]
+  payment          Payment?
+}
+
+model OrderItem {
+  id             String  @id @default(cuid())
+  orderId        String
+  productId      String
+  productName    String
+  unitPricePaise Int
+  unit           Unit
+  quantity       Int
+  order          Order   @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  product        Product @relation(fields: [productId], references: [id])
+}
+
+model Payment {
+  id          String        @id @default(cuid())
+  orderId     String        @unique
+  method      PaymentMethod
+  status      PaymentStatus @default(PENDING)
+  amountPaise Int
+  order       Order         @relation(fields: [orderId], references: [id], onDelete: Cascade)
+}
+
+model Review {
+  id         String  @id @default(cuid())
+  userId     String
+  productId  String
+  rating     Int
+  title      String?
+  comment    String
+  isApproved Boolean @default(true)
+  user       User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  product    Product @relation(fields: [productId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, productId])
+}
+
+model Coupon {
+  id            String       @id @default(cuid())
+  code          String       @unique
+  description   String?
+  discountType  DiscountType
+  value         Int
+  minOrderPaise Int          @default(0)
+  isActive      Boolean      @default(true)
+  startsAt      DateTime
+  endsAt        DateTime
+}
+
+model DeliveryZone {
+  id                     String  @id @default(cuid())
+  pincode                String  @unique
+  city                   String
+  deliveryFeePaise       Int     @default(0)
+  freeDeliveryAbovePaise Int?
+  estimatedDays          Int     @default(1)
+  isActive               Boolean @default(true)
+}

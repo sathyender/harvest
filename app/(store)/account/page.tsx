@@ -1,0 +1,3 @@
+import { requireUser } from "@/lib/auth/session";
+import { LogoutButton } from "@/components/auth/LogoutButton";
+export default async function AccountPage(){const user=await requireUser("/account");return <main className="section"><span className="eyebrow">Your harvest account</span><h1 style={{font:"500 60px Georgia,serif",letterSpacing:"-3px"}}>Welcome, {user.name.split(" ")[0]}.</h1><div style={{marginTop:32,maxWidth:560,border:"1px solid var(--line)",padding:24,background:"#fbfaf4"}}><p className="eyebrow">Profile</p><p>{user.email}</p><p style={{color:"var(--muted)",fontSize:13}}>{user.phone??"No phone number added"}</p><div style={{marginTop:20}}><LogoutButton/></div></div></main>}
