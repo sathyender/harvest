@@ -59,11 +59,11 @@ Run the production build after stopping any active development server and cleari
 
 ### Vercel
 
-Deploy this Next.js project as one application. Set `DATABASE_URL`, `DIRECT_URL`, `AUTH_SECRET`, and `NEXT_PUBLIC_APP_URL` in Vercel Project Settings. Run `npx prisma migrate deploy` from a controlled release environment before using a new schema. No separate backend is required for the current architecture.
+Deploy this Next.js project as one application. Set `DATABASE_URL`, `DIRECT_URL`, `AUTH_SECRET`, and `NEXT_PUBLIC_APP_URL` for the Vercel Production environment (and Preview if you test preview deployments). `AUTH_SECRET` must be a stable random value; generate it with `npx auth secret`. Vercel builds do not run this project's `prestart` script, so apply schema migrations with `npx prisma migrate deploy` from a controlled release environment before serving the deployment. For a new empty database, run `npx tsx prisma/seed.ts` once to create the catalogue and inventory. Register a production account at `/register`; local users are not copied to the hosted database. After changing Vercel variables, redeploy.
 
 ### Render
 
-Render is not required for the current application server. It can host PostgreSQL or a later worker, but do not deploy a duplicate backend unless a separate service is actually added.
+Create a Node web service with Node.js 20 or newer, build command `npm install && npm run build`, and start command `npm start`. Set `DATABASE_URL`, `DIRECT_URL`, `AUTH_SECRET`, and `NEXT_PUBLIC_APP_URL` in the service environment. Running `npm start` invokes the `prestart` script, which applies migrations and runs the seed. On an empty database the seed creates the catalogue and inventory; it creates demo users only when all four `SEED_*` variables are set. Create a normal production account through `/register` when those demo variables are not configured. The seed intentionally skips production databases that already contain products.
 
 ### Payments and media
 

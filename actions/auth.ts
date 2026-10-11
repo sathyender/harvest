@@ -32,7 +32,7 @@ export async function registerAction(_previous: ActionState, form: FormData): Pr
     console.error("Registration failed", databaseLogDetails(error));
     return { success: false, message: "We could not create your account right now. Please try again.", values: raw };
   }
-  try { await signIn("credentials", { email: parsed.data.email, password: parsed.data.password, redirectTo: "/" }); return { success: true }; } catch (error) { if (error instanceof AuthError) return { success: false, message: "Your account was created. Please sign in.", values: raw }; throw error; }
+  try { await signIn("credentials", { email: parsed.data.email, password: parsed.data.password, redirectTo: "/" }); return { success: true }; } catch (error) { if (error instanceof AuthError) { if (error.type === "CredentialsSignin") return { success: false, message: "Your account was created. Please sign in.", values: raw }; console.error("Registration sign-in failed", error.type); return { success: false, message: "Your account was created, but sign-in is not configured on this deployment. Ask the site owner to check AUTH_SECRET.", values: raw }; } if (error instanceof Prisma.PrismaClientInitializationError || error instanceof Prisma.PrismaClientKnownRequestError) { console.error("Registration sign-in database failure", databaseLogDetails(error)); return { success: false, message: `Your account was created, but sign-in failed. ${databaseUserMessage(error)}`, values: raw }; } throw error; }
 }
 
 export async function loginAction(_previous: ActionState, form: FormData): Promise<ActionState> {
@@ -41,7 +41,7 @@ export async function loginAction(_previous: ActionState, form: FormData): Promi
   if (!parsed.success) return { success: false, message: "Enter a valid email and password.", values: { email: raw.email } };
   let destination = "/";
   try { const found = await db.user.findUnique({ where: { email: parsed.data.email }, select: { role: true } }); destination = safeRedirectPath(text(form, "callbackUrl"), found?.role === "ADMIN" ? "/admin" : "/"); } catch (error) { console.error("Login lookup failed", databaseLogDetails(error)); return { success: false, message: databaseUserMessage(error), values: { email: raw.email } }; }
-  try { await signIn("credentials", { ...parsed.data, redirectTo: destination }); return { success: true }; } catch (error) { if (error instanceof AuthError) return { success: false, message: "Invalid email or password.", values: { email: raw.email } }; throw error; }
+  try { await signIn("credentials", { ...parsed.data, redirectTo: destination }); return { success: true }; } catch (error) { if (error instanceof AuthError) { if (error.type === "CredentialsSignin") return { success: false, message: "Invalid email or password.", values: { email: raw.email } }; console.error("Login session creation failed", error.type); return { success: false, message: "Sign-in is unavailable. Ask the site owner to check AUTH_SECRET and the production configuration.", values: { email: raw.email } }; } if (error instanceof Prisma.PrismaClientInitializationError || error instanceof Prisma.PrismaClientKnownRequestError) { console.error("Login session database failure", databaseLogDetails(error)); return { success: false, message: databaseUserMessage(error), values: { email: raw.email } }; } throw error; }
 }
 
 export async function logoutAction() {

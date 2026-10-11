@@ -1,8 +1,8 @@
-import NextAuth from "next-auth";
+﻿import NextAuth from "next-auth";
 import { authConfig } from "@/lib/auth/auth.config";
 
 export default NextAuth(authConfig).auth;
 
 export const config = {
-  matcher: ["/admin/:path*", "/account/:path*", "/cart/:path*", "/wishlist/:path*", "/checkout/:path*", "/orders/:path*", "/login", "/register"],
+  matcher: ["/((?!_next/static|_next/image|favicon.ico|api/auth/).*)"],
 };
